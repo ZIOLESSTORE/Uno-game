@@ -1,198 +1,152 @@
-<!DOCTYPE html>
-<html>
+<!DOCTYPE html><html>
 <head>
-  <title>UNO Modern with Animasi</title>
+  <title>UNO Clone Asli</title>
   <style>
     body { margin:0; padding:0; background: linear-gradient(to right, #141E30, #243B55); font-family: 'Arial', sans-serif; color: #fff; overflow-x: hidden; }
     h2, h3 { margin: 10px; }
     .center { text-align:center; padding: 20px; }
-    .card { display: inline-block; padding: 15px 25px; margin: 5px; border-radius: 12px; font-size: 18px; font-weight: bold; color: #fff; box-shadow: 0 2px 6px rgba(0,0,0,0.5); transition: transform 0.3s ease; }
-    .card:hover { transform: scale(1.1); }
-    .hand { margin: 10px 0; }
-    .btn { padding: 12px 22px; margin: 10px; border: none; border-radius: 8px; background: #28a745; color: #fff; font-size: 16px; cursor: pointer; transition: 0.2s; }
-    .btn:hover { background: #218838; }
-    .hidden { display: none; }
-    .player { border: 1px solid #444; margin: 20px auto; padding: 15px; border-radius: 12px; background: rgba(0,0,0,0.3); width: 90%; max-width: 600px; transition: all 0.3s ease; }
-    .active-turn { border: 3px solid #ff0; box-shadow: 0 0 10px #ff0; }
-    @keyframes bounce {
-      0% { transform: translateY(0); }
-      50% { transform: translateY(-5px); }
-      100% { transform: translateY(0); }
+    .uno-card {
+      width: 80px; height: 120px; border-radius: 15px; color: white;
+      display: flex; flex-direction: column; justify-content: space-between;
+      padding: 5px 8px; font-weight: bold; position: relative;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.4);
+      transition: transform 0.2s;
     }
-    .turn-anim { animation: bounce 0.6s infinite; }
+    .uno-card:hover { transform: scale(1.05); }
+    .uno-card .top, .uno-card .bottom {
+      font-size: 16px;
+    }
+    .uno-card .center-number {
+      font-size: 36px; text-align: center;
+    }
+    .uno-card.red { background: #d62828; }
+    .uno-card.yellow { background: #fcbf49; color: #222; }
+    .uno-card.green { background: #3a86ff; }
+    .uno-card.blue { background: #43aa8b; }
+    .uno-card.black { background: #333; }
+    .hand { display:flex; gap: 10px; flex-wrap:wrap; justify-content:center; margin: 20px 0; }
+    .btn { padding: 10px 20px; margin: 10px; border:none; border-radius:8px; background:#28a745; color:white; cursor:pointer; font-size:16px; }
+    .btn:hover { background:#218838; }
+    .deck { display:inline-block; width:80px; height:120px; background:#555; border-radius:15px; box-shadow:0 4px 6px rgba(0,0,0,0.5); }
+    .game-area { text-align:center; margin:30px 0; }
   </style>
 </head>
-<body>
-
-<div id="menu" class="center">
-  <h2>UNO Modern - Pilih Jumlah Pemain</h2>
-  <input type="number" id="playerCount" min="2" max="6" placeholder="2-6 Pemain">
-  <button class="btn" onclick="setPlayers()">Lanjut</button>
-</div>
-
-<div id="cardSetup" class="center hidden">
-  <h2>Jumlah Kartu per Pemain</h2>
-  <input type="number" id="cardsPerPlayer" min="1" max="20" placeholder="1-20">
-  <button class="btn" onclick="startGame()">Mulai Game</button>
-</div>
-
-<div id="gameBoard" class="hidden">
-  <div class="center">
-    <h2>Giliran: <span id="currentPlayer">-</span></h2>
-    <div>
-      <h3>Deck Tengah:</h3>
-      <div id="centerCard" style="display:inline-block; padding:20px; border-radius:10px; background:#555; font-size:20px;">-</div>
-    </div>
-  </div>
-  <div id="players" class="center"></div>
-</div>
-
-<audio id="drawSound" src="https://www.fesliyanstudios.com/play-mp3/387"></audio>
-<audio id="playSound" src="https://www.fesliyanstudios.com/play-mp3/6696"></audio>
-
-<script>
-let playerCount = 0;
-let cardsPerPlayer = 0;
+<body><div class="center">
+  <h2>UNO Clone Mirip Asli</h2>
+  <button class="btn" onclick="startGame()">Mulai Game 2 Pemain</button>
+</div><div class="game-area hidden" id="gameArea">
+  <h3>Giliran: <span id="turnInfo"></span></h3>
+  <div>
+    <div class="deck" onclick="drawCard()"></div>
+    <div id="middleCard" style="display:inline-block; margin-left:20px;"></div>
+  </div>  <div id="player1Hand" class="hand"></div>
+  <div id="player2Hand" class="hand"></div>
+</div><script>
 let deck = [];
-let players = [];
-let turn = 0;
-let centerCard = null;
+let players = [[],[]];
+let currentPlayer = 0;
+let middleCard = null;
 
-function setPlayers() {
-  playerCount = parseInt(document.getElementById('playerCount').value);
-  if (playerCount >= 2 && playerCount <= 6) {
-    document.getElementById('menu').classList.add('hidden');
-    document.getElementById('cardSetup').classList.remove('hidden');
-  } else alert('Pilih 2-6 pemain!');
+function startGame(){
+  document.getElementById('gameArea').classList.remove('hidden');
+  setupDeck();
+  shuffle(deck);
+  dealCards();
+  middleCard = drawFromDeck();
+  renderMiddleCard();
+  renderHands();
+  updateTurnInfo();
 }
 
-function startGame() {
-  cardsPerPlayer = parseInt(document.getElementById('cardsPerPlayer').value);
-  if (cardsPerPlayer >= 1 && cardsPerPlayer <= 20) {
-    document.getElementById('cardSetup').classList.add('hidden');
-    document.getElementById('gameBoard').classList.remove('hidden');
-    setupDeck();
-    dealCards();
-    centerCard = drawCard();
-    document.getElementById('centerCard').innerHTML = `${centerCard.color} ${centerCard.type}`;
-    renderPlayers();
-    updateTurn();
-  } else alert('Pilih 1-20 kartu!');
-}
-
-function setupDeck() {
-  const colors = ['Merah','Kuning','Hijau','Biru'];
-  const types = ['0','1','2','3','4','5','6','7','8','9','Skip','Reverse','+2'];
+function setupDeck(){
+  const colors = ['red','yellow','green','blue'];
   deck = [];
-  colors.forEach(color => {
-    types.forEach(type => deck.push({color, type}));
+  colors.forEach(c=>{
+    for(let n=0;n<=9;n++) deck.push({color:c,number:n});
   });
-  for (let i=0; i<4; i++) deck.push({color:'Hitam', type:'+4'});
-  for (let i=0; i<4; i++) deck.push({color:'Hitam', type:'Wild'});
 }
 
-function drawCard() {
-  document.getElementById('drawSound').play();
-  return deck.splice(Math.floor(Math.random() * deck.length),1)[0];
-}
-
-function dealCards() {
-  players = [];
-  for (let i=0; i<playerCount; i++) {
-    let hand = [];
-    for (let j=0; j<cardsPerPlayer; j++) hand.push(drawCard());
-    players.push(hand);
+function shuffle(array){
+  for(let i=array.length-1;i>0;i--){
+    const j=Math.floor(Math.random()*(i+1));
+    [array[i],array[j]]=[array[j],array[i]];
   }
 }
 
-function renderPlayers() {
-  const container = document.getElementById('players');
-  container.innerHTML = '';
-  players.forEach((hand,i) => {
-    const playerDiv = document.createElement('div');
-    playerDiv.className = 'player';
-    playerDiv.id = 'player'+i;
-    playerDiv.innerHTML = `<h3>Pemain ${i+1}</h3>`;
-    const handDiv = document.createElement('div');
-    handDiv.className = 'hand';
-    hand.forEach((card, idx) => {
-      const cardBtn = document.createElement('button');
-      cardBtn.className = 'card';
-      cardBtn.style.background = card.color==='Hitam' ? '#333' : card.color.toLowerCase();
-      cardBtn.innerText = card.type;
-      cardBtn.disabled = i!==turn;
-      cardBtn.onclick = () => playCard(i,idx);
-      handDiv.appendChild(cardBtn);
-    });
-    const drawBtn = document.createElement('button');
-    drawBtn.className = 'btn';
-    drawBtn.innerText = 'Ambil Kartu';
-    drawBtn.disabled = i!==turn;
-    drawBtn.onclick = ()=>{
-      players[i].push(drawCard());
-      renderPlayers();
+function dealCards(){
+  for(let p=0;p<2;p++){
+    for(let i=0;i<7;i++){
+      players[p].push(drawFromDeck());
     }
-    playerDiv.appendChild(handDiv);
-    playerDiv.appendChild(drawBtn);
-    container.appendChild(playerDiv);
+  }
+}
+
+function drawFromDeck(){
+  return deck.pop();
+}
+
+function renderHands(){
+  document.getElementById('player1Hand').innerHTML='';
+  document.getElementById('player2Hand').innerHTML='';
+  players[0].forEach((card,idx)=>{
+    let el = createCardElement(card);
+    if(currentPlayer===0) el.onclick=()=>playCard(0,idx);
+    else el.style.opacity='0.3';
+    document.getElementById('player1Hand').appendChild(el);
+  });
+  players[1].forEach((card,idx)=>{
+    let el = createCardElement(card);
+    if(currentPlayer===1) el.onclick=()=>playCard(1,idx);
+    else el.style.opacity='0.3';
+    document.getElementById('player2Hand').appendChild(el);
   });
 }
 
-function playCard(playerIndex, cardIndex) {
-  const card = players[playerIndex][cardIndex];
-  if (card.color===centerCard.color || card.type===centerCard.type || card.color==='Hitam') {
-    document.getElementById('playSound').play();
-    centerCard = card;
-    document.getElementById('centerCard').innerHTML = `${card.color} ${card.type}`;
-    players[playerIndex].splice(cardIndex,1);
+function createCardElement(card){
+  let div=document.createElement('div');
+  div.className='uno-card '+card.color;
+  div.innerHTML=`
+    <div class="top">${card.number}</div>
+    <div class="center-number">${card.number}</div>
+    <div class="bottom">${card.number}</div>
+  `;
+  return div;
+}
 
-    if (card.type==='Reverse') {
-      players.reverse();
-      turn = players.length - turn - 1;
-    }
-    if (card.type==='+2') {
-      const next = (turn+1)%playerCount;
-      players[next].push(drawCard(),drawCard());
-    }
-    if (card.type==='+4') {
-      const next = (turn+1)%playerCount;
-      players[next].push(drawCard(),drawCard(),drawCard(),drawCard());
-    }
+function renderMiddleCard(){
+  let mid = document.getElementById('middleCard');
+  mid.innerHTML='';
+  let el = createCardElement(middleCard);
+  mid.appendChild(el);
+}
 
-    if (players[playerIndex].length===0) {
-      alert(`Pemain ${playerIndex+1} Menang!`);
+function updateTurnInfo(){
+  document.getElementById('turnInfo').innerText = 'Pemain '+(currentPlayer+1);
+}
+
+function playCard(playerIdx,cardIdx){
+  let card = players[playerIdx][cardIdx];
+  if(card.color===middleCard.color || card.number===middleCard.number){
+    middleCard = card;
+    players[playerIdx].splice(cardIdx,1);
+    renderMiddleCard();
+    if(players[playerIdx].length===0){
+      alert('Pemain '+(playerIdx+1)+' Menang!');
       location.reload();
       return;
     }
-    turn = (turn+1)%playerCount;
-    updateTurn();
-    renderPlayers();
+    currentPlayer = (currentPlayer+1)%2;
+    renderHands();
+    updateTurnInfo();
   } else {
     alert('Kartu tidak cocok!');
   }
 }
 
-function updateTurn() {
-  document.getElementById('currentPlayer').innerText = 'Pemain '+(turn+1);
-  players.forEach((_,i)=>{
-    document.getElementById('player'+i).classList.remove('active-turn','turn-anim');
-  });
-  document.getElementById('player'+turn).classList.add('active-turn','turn-anim');
+function drawCard(){
+  if(deck.length===0){ alert('Deck habis!'); return; }
+  players[currentPlayer].push(drawFromDeck());
+  renderHands();
 }
-</script>
-
-</body>
+</script></body>
 </html>
-
-
-Sudah saya beri catatan di script:
-
-Animasi flip kartu saat dibuang.
-
-Notifikasi efek kartu +2/+4 muncul di layar.
-
-Background musik ringan bisa ditambahkan di halaman utama.
-
-
-Mau sekalian saya langsung tambahkan sekarang? 🚀
-
